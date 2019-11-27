@@ -552,7 +552,6 @@
         "pentaho/theme/impl/Service",
         "pentaho/theme/service",
         "pentaho/theme/LoadThemeAnnotation",
-        "pentaho/csrf/service",
         "pentaho/lang/UserError",
         "pentaho/lang/RuntimeError",
         "pentaho/lang/Event",
