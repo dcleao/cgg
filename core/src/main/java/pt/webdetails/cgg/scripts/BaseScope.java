@@ -1,5 +1,5 @@
 /*!
-* Copyright 2002 - 2021 Webdetails, a Hitachi Vantara company.  All rights reserved.
+ * Copyright 2002 - 2024 Webdetails, a Hitachi Vantara company.  All rights reserved.
 *
 * This software was developed by Webdetails and is provided under the terms
 * of the Mozilla Public License, Version 2.0, or any later version. You may not use
@@ -13,37 +13,16 @@
 
 package pt.webdetails.cgg.scripts;
 
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Toolkit;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import javax.swing.JLabel;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Result;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
+import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
+import org.apache.batik.anim.dom.SVGDOMImplementation;
+import org.apache.batik.anim.dom.SVGOMDocument;
+import org.apache.batik.bridge.BridgeContext;
+import org.apache.batik.bridge.DefaultFontFamilyResolver;
 import org.apache.batik.bridge.DocumentLoader;
 import org.apache.batik.bridge.GVTBuilder;
 import org.apache.batik.bridge.UserAgent;
 import org.apache.batik.bridge.UserAgentAdapter;
-import org.apache.batik.bridge.BridgeContext;
-import org.apache.batik.bridge.DefaultFontFamilyResolver;
 import org.apache.batik.css.engine.CSSEngine;
-import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
-import org.apache.batik.anim.dom.SVGDOMImplementation;
-import org.apache.batik.anim.dom.SVGOMDocument;
 import org.apache.batik.gvt.font.GVTFontFamily;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -54,6 +33,27 @@ import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.w3c.dom.Node;
+
+import javax.swing.JLabel;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Toolkit;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.util.HashMap;
 
 /**
  * @author pdpi
@@ -68,11 +68,13 @@ public class BaseScope extends ImporterTopLevel {
   private ScriptFactory scriptFactory;
   private HashMap<String, org.mozilla.javascript.Script> userScripts;
   private HashMap<String, org.mozilla.javascript.Script> processed;
+  private final TimeoutController timeoutController;
 
   public BaseScope() {
     userScripts = new HashMap<String, org.mozilla.javascript.Script>();
     processed = new HashMap<String, org.mozilla.javascript.Script>();
     sealedStdLib = false;
+    timeoutController = new TimeoutController( this );
   }
 
   public void init( final Context cx ) {
@@ -80,10 +82,13 @@ public class BaseScope extends ImporterTopLevel {
       // Define some global functions particular to the shell. Note
       // that these functions are not part of ECMA.
       initStandardObjects( cx, sealedStdLib );
+
       final String[] names = {
-        "print", "load", "lib", "_loadSvg", "_xmlToString", "getTextLenCGG", "getTextHeightCGG", "res", "readResource"
+        "print", "load", "lib", "_loadSvg", "_xmlToString", "getTextLenCGG", "getTextHeightCGG", "res", "readResource",
+        "setTimeout", "clearTimeout", "_runTimeouts"
       };
       defineFunctionProperties( names, BaseScope.class, ScriptableObject.DONTENUM );
+
       initialized = true;
     }
   }
@@ -300,6 +305,7 @@ public class BaseScope extends ImporterTopLevel {
     this.scriptFactory = scriptFactory;
   }
 
+  // region font and text
   public static Object getTextLenCGG( Context cx, Scriptable thisObj,
                                       Object[] args, Function funObj ) {
 
@@ -473,4 +479,43 @@ public class BaseScope extends ImporterTopLevel {
 
     return ffont;
   }
+  // endregion
+
+  // region setTimeout, clearTimeout, run
+  public static Object setTimeout( final Context cx,
+                                   final Scriptable thisObj,
+                                   final Object[] args,
+                                   final Function funObj ) {
+    BaseScope scope = (BaseScope) thisObj;
+    return scope.doSetTimeout( cx, args );
+  }
+
+  public static void clearTimeout( final Context cx,
+                                   final Scriptable thisObj,
+                                   final Object[] args,
+                                   final Function funObj ) {
+    BaseScope scope = (BaseScope) thisObj;
+    scope.doClearTimeout( cx, args );
+  }
+
+  public static void _runTimeouts( final Context cx,
+                                   final Scriptable thisObj,
+                                   final Object[] args,
+                                   final Function funObj ) {
+    BaseScope scope = (BaseScope) thisObj;
+    scope.run( cx );
+  }
+
+  public Object doSetTimeout( final Context cx, final Object[] args ) {
+    return timeoutController.setTimeout( cx, args );
+  }
+
+  public void doClearTimeout( final Context cx, final Object[] args ) {
+    timeoutController.clearTimeout( cx, args );
+  }
+
+  public void run( final Context cx ) {
+    timeoutController.run( cx );
+  }
+  // endregion
 }

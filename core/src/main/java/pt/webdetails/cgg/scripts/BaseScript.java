@@ -1,5 +1,5 @@
 /*!
- * Copyright 2002 - 2021 Webdetails, a Hitachi Vantara company.  All rights reserved.
+ * Copyright 2002 - 2024 Webdetails, a Hitachi Vantara company.  All rights reserved.
  *
  * This software was developed by Webdetails and is provided under the terms
  * of the Mozilla Public License, Version 2.0, or any later version. You may not use
@@ -116,11 +116,12 @@ public abstract class BaseScript implements Script {
     if ( params == null ) {
       throw new NullPointerException();
     }
-    if ( Context.getCurrentContext() == null ) {
+
+    final Context cx = Context.getCurrentContext();
+    if ( cx == null ) {
       throw new ScriptExecuteException();
     }
 
-    final Context cx = Context.getCurrentContext();
     // env.js has methods that pass the 64k Java limit, so we can't compile
     // to bytecode. Interpreter mode to the rescue!
     cx.setOptimizationLevel( -1 );
@@ -131,6 +132,10 @@ public abstract class BaseScript implements Script {
 
     try {
       scope.loadScript( cx, source );
+
+      // Run to completion.
+      scope.run( cx );
+
     } catch ( ScriptResourceNotFoundException e ) {
       logger.error( "Failed to read " + source + ": " + e.toString(), e );
     } catch ( IOException e ) {

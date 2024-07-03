@@ -1,5 +1,5 @@
 /*!
-* Copyright 2002 - 2021 Webdetails, a Hitachi Vantara company.  All rights reserved.
+* Copyright 2002 - 2024 Webdetails, a Hitachi Vantara company.  All rights reserved.
 *
 * This software was developed by Webdetails and is provided under the terms
 * of the Mozilla Public License, Version 2.0, or any later version. You may not use
@@ -81,11 +81,17 @@ public abstract class AbstractScriptFactory implements ScriptFactory {
   }
 
   public void enterContext() {
+    enterContextCore();
+  }
+
+  protected Context enterContextCore() {
     Context cx = contextFactory.enterContext();
 
     cx.setGeneratingDebug( false );
     cx.setOptimizationLevel( -1 );
     cx.setLanguageVersion( Context.VERSION_ES6 );
+
+    return cx;
   }
 
   public void exitContext() {
@@ -106,9 +112,7 @@ public abstract class AbstractScriptFactory implements ScriptFactory {
   protected BaseScope createScope( final ScriptType type ) throws ScriptExecuteException {
     final String[] dependencies = computeDependencies( type );
 
-    final Context cx = contextFactory.enterContext();
-    cx.setGeneratingDebug( false );
-    cx.setOptimizationLevel( -1 );
+    final Context cx = enterContextCore();
 
     final BaseScope scope = new BaseScope();
     scope.setScriptFactory( this );

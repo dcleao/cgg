@@ -1,5 +1,5 @@
 /*!
-* Copyright 2002 - 2021 Webdetails, a Hitachi Vantara company.  All rights reserved.
+* Copyright 2002 - 2024 Webdetails, a Hitachi Vantara company.  All rights reserved.
 *
 * This software was developed by Webdetails and is provided under the terms
 * of the Mozilla Public License, Version 2.0, or any later version. You may not use
@@ -17,6 +17,7 @@
  */
 
 define(function() {
+    /* globals _runTimeouts */
 
     var SVG_IMPL = 'batik';
     var A_slice = Array.prototype.slice;
@@ -68,8 +69,6 @@ define(function() {
             globalThis.navigator = {userAgent: ""};
             globalThis.Element   = Element;
             globalThis.CSSStyleDeclaration = CSSStyleDeclaration;
-            globalThis.clearTimeout = win.clearTimeout;
-            globalThis.setTimeout   = win.setTimeout;
         }
 
         return win;
@@ -430,6 +429,11 @@ define(function() {
         return ret;
     }
 
+    // Make sure to call _runTimeouts on the global object or the call fails.
+    function run() {
+        _runTimeouts();
+    }
+
     return {
         document: createDocument,
         element:  createElement,
@@ -437,6 +441,6 @@ define(function() {
         window:   createWindow,
         console:  createConsole,
         loadSvg:  loadSvg,
-        run:      globalThis.__timer__run__
+        run:      run
     };
 });

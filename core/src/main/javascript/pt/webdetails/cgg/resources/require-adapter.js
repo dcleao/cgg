@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017-2021 Webdetails, a Hitachi Vantara company.  All rights reserved.
+ * Copyright 2017-2024 Webdetails, a Hitachi Vantara company.  All rights reserved.
  *
  * This software was developed by Webdetails and is provided under the terms
  * of the Mozilla Public License, Version 2.0, or any later version. You may not use
@@ -14,9 +14,7 @@
 
     "use strict";
 
-    /* globals lib, load, require */
-
-    lib("timer.js");
+    /* globals lib, load, require, _runTimeouts */
 
     lib("require.js");
 
@@ -45,7 +43,7 @@
                 error = _error;
             });
 
-            globalThis.__timer__run__();
+            _runTimeouts();
 
             if(error) { // only in sync case...
                 throw error;
